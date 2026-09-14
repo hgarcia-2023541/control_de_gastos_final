@@ -13,6 +13,7 @@ const ingresoSchema = z.object({
   descripcion: z.string().min(1, "La descripción es obligatoria").max(200),
   fuente: z.string().min(1, "La fuente es obligatoria").max(100),
   categoria: z.string().min(1, "La categoría es obligatoria").max(100),
+  tipo: z.enum(["fijo", "variable"]).default("variable"),
   monto: z.coerce.number().positive("La cantidad debe ser mayor que cero"),
   fecha: z.coerce.date({ errorMap: () => ({ message: "Fecha inválida" }) }),
 });

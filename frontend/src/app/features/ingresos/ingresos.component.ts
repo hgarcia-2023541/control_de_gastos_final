@@ -5,15 +5,16 @@ import { SidebarComponent } from "../../shared/components/sidebar/sidebar.compon
 import { DonutChartComponent } from "../../shared/components/donut-chart/donut-chart.component";
 import { AuthService } from "../../core/services/auth.service";
 import { IngresosService } from "../../core/services/ingresos.service";
-import { PeriodoService } from '../../core/services/periodo.service'; 
+import { PeriodoService } from '../../core/services/periodo.service';
 import {
   CATEGORIAS_INGRESO,
   FiltrosIngreso,
   Ingreso,
   IngresoFormulario,
+  TipoMovimiento,
 } from "../../shared/models/ingreso.model";
 import { CategoriaGasto } from "../../shared/models/dashboard.model";
-import { fechaEnPeriodo, periodoActual } from "../../shared/utils/periodo.util";
+import { fechaEnPeriodo, parsearPeriodo, ultimosPeriodos } from "../../shared/utils/periodo.util";
 
 // Fuentes sugeridas para el datalist del formulario (el usuario puede
 // escribir cualquier otra, esto solo ayuda con autocompletado)
@@ -35,20 +36,25 @@ export class IngresosComponent implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private ingresosService = inject(IngresosService);
+  private periodoService = inject(PeriodoService);
 
   usuario = this.authService.obtenerUsuario();
   inicialUsuario = (this.usuario?.nombre?.charAt(0) ?? "?").toUpperCase();
   categoriasSugeridas = CATEGORIAS_INGRESO;
   fuentesSugeridas = FUENTES_SUGERIDAS;
 
-  // Selector de período COMPARTIDO con el Dashboard
-periodos = ["Junio 2026", "Julio 2026", "Agosto 2026", "Septiembre 2026", "Octubre 2026"];
-private periodoService = inject(PeriodoService); // <-- Inyectar el servicio
-periodoSeleccionado = this.periodoService.periodo; // <-- Usar el signal del servicio
-mostrarSelectorPeriodo = signal(false);
+  // Selector de período: se genera dinámicamente con el mes actual y los
+  // anteriores (nunca meses futuros; el backend rechaza fechas futuras).
+  periodos = ultimosPeriodos(6);
+  periodoSeleccionado = this.periodoService.periodo;
+  mostrarSelectorPeriodo = signal(false);
 
   // --- Datos ---
+  // Tabla visible: solo el período seleccionado (comportamiento actual).
   ingresos = signal<Ingreso[]>([]);
+  // Lista COMPLETA que devuelve el backend con los filtros: alimenta las
+  // tarjetas de "mes" y "año" sin depender del período del selector.
+  ingresosCompletos = signal<Ingreso[]>([]);
   cargando = signal(true);
   errorCarga = signal<string | null>(null);
 
@@ -66,10 +72,16 @@ mostrarSelectorPeriodo = signal(false);
   guardando = signal(false);
   errorFormulario = signal<string | null>(null);
 
+  // Fechas futuras: se bloquean en el input (max) y también aquí como UX;
+  // el backend las rechaza además contra la fecha real del servidor.
+  fechaMaxima = new Date().toISOString().slice(0, 10);
+
   formulario = this.fb.group({
     descripcion: ["", [Validators.required, Validators.maxLength(200)]],
     fuente: ["", [Validators.required, Validators.maxLength(100)]],
     categoria: ["", [Validators.required, Validators.maxLength(100)]],
+    // Fijo/variable es SOLO una clasificación (sin recurrencia automática).
+    tipo: ["variable" as TipoMovimiento, [Validators.required]],
     monto: [null as number | null, [Validators.required, Validators.min(0.01)]],
     fecha: ["", [Validators.required]],
   });
@@ -92,9 +104,17 @@ mostrarSelectorPeriodo = signal(false);
     this.ingresosFiltrados().reduce((suma, i) => suma + i.monto, 0)
   );
 
+  anioSeleccionado = computed(() => parsearPeriodo(this.periodoSeleccionado()).anio);
+
   ingresosDelMes = computed(() =>
-    this.ingresos()
+    this.ingresosCompletos()
       .filter((i) => fechaEnPeriodo(i.fecha, this.periodoSeleccionado()))
+      .reduce((suma, i) => suma + i.monto, 0)
+  );
+
+  ingresosDelAnio = computed(() =>
+    this.ingresosCompletos()
+      .filter((i) => i.fecha.startsWith(String(this.anioSeleccionado())))
       .reduce((suma, i) => suma + i.monto, 0)
   );
 
@@ -127,44 +147,43 @@ mostrarSelectorPeriodo = signal(false);
   }
 
   private cargarIngresos(): void {
-  this.cargando.set(true);
-  this.errorCarga.set(null);
+    this.cargando.set(true);
+    this.errorCarga.set(null);
 
-  const filtros: FiltrosIngreso = {
-    busqueda: this.busqueda() || undefined,
-    fechaInicio: this.fechaInicio() || undefined,
-    fechaFin: this.fechaFin() || undefined,
-    categoria: this.categoriaFiltro() || undefined,
-    // NO envíes periodo al backend
-  };
+    const filtros: FiltrosIngreso = {
+      busqueda: this.busqueda() || undefined,
+      fechaInicio: this.fechaInicio() || undefined,
+      fechaFin: this.fechaFin() || undefined,
+      categoria: this.categoriaFiltro() || undefined,
+      // NO envíes periodo al backend
+    };
 
-  this.ingresosService.obtenerIngresos(filtros).subscribe({
-    next: (lista) => {
-      // Filtrar localmente por período
-      const periodoActual = this.periodoSeleccionado();
-      const listaFiltrada = lista.filter(i => 
-        fechaEnPeriodo(i.fecha, periodoActual)
-      );
-      this.ingresos.set(listaFiltrada);
-      this.cargando.set(false);
-    },
-    error: (err: any) => {
-      this.errorCarga.set("No se pudieron cargar tus ingresos.");
-      this.cargando.set(false);
-    },
-  });
-}
+    this.ingresosService.obtenerIngresos(filtros).subscribe({
+      next: (lista) => {
+        // Guardamos la lista completa para las tarjetas de mes/año...
+        this.ingresosCompletos.set(lista);
+        // ...y la del período para la tabla.
+        const periodoActual = this.periodoSeleccionado();
+        this.ingresos.set(lista.filter((i) => fechaEnPeriodo(i.fecha, periodoActual)));
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.errorCarga.set("No se pudieron cargar tus ingresos.");
+        this.cargando.set(false);
+      },
+    });
+  }
 
   // ---------- Período ----------
   alternarSelectorPeriodo(): void {
     this.mostrarSelectorPeriodo.update((v) => !v);
   }
 
-seleccionarPeriodo(periodo: string): void {
-  this.periodoService.setPeriodo(periodo); // <-- Usar el servicio
-  this.mostrarSelectorPeriodo.set(false);
-  this.cargarIngresos(); // <-- Recargar datos con el nuevo período
-}
+  seleccionarPeriodo(periodo: string): void {
+    this.periodoService.setPeriodo(periodo);
+    this.mostrarSelectorPeriodo.set(false);
+    this.cargarIngresos();
+  }
 
   // ---------- Filtros ----------
   onBusquedaCambiada(valor: string): void {
@@ -220,6 +239,7 @@ seleccionarPeriodo(periodo: string): void {
       descripcion: "",
       fuente: "",
       categoria: "",
+      tipo: "variable",
       monto: null,
       fecha: new Date().toISOString().slice(0, 10),
     });
@@ -233,6 +253,7 @@ seleccionarPeriodo(periodo: string): void {
       descripcion: ingreso.descripcion,
       fuente: ingreso.fuente,
       categoria: ingreso.categoria,
+      tipo: (ingreso.tipo as TipoMovimiento) ?? "variable",
       monto: ingreso.monto,
       fecha: ingreso.fecha,
     });
@@ -250,16 +271,27 @@ seleccionarPeriodo(periodo: string): void {
       return;
     }
 
+    const valores = this.formulario.value;
+    const fecha = valores.fecha!;
+
+    // Fecha futura: mismo mensaje que envía el backend (consistencia UX).
+    if (fecha > this.fechaMaxima) {
+      this.errorFormulario.set(
+        "No se permiten fechas futuras. La fecha debe ser hoy o anterior."
+      );
+      return;
+    }
+
     this.guardando.set(true);
     this.errorFormulario.set(null);
 
-    const valores = this.formulario.value;
     const datos: IngresoFormulario = {
       descripcion: valores.descripcion!.trim(),
       fuente: valores.fuente!.trim(),
       categoria: valores.categoria!.trim(),
+      tipo: (valores.tipo as TipoMovimiento) ?? "variable",
       monto: Number(valores.monto),
-      fecha: valores.fecha!,
+      fecha,
     };
 
     const enEdicion = this.ingresoEnEdicion();

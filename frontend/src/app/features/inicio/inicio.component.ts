@@ -6,7 +6,8 @@ import { LineChartComponent } from "../../shared/components/line-chart/line-char
 import { DonutChartComponent } from "../../shared/components/donut-chart/donut-chart.component";
 import { AuthService } from "../../core/services/auth.service";
 import { DashboardService } from "../../core/services/dashboard.service";
-import { PeriodoService } from '../../core/services/periodo.service'; 
+import { PeriodoService } from '../../core/services/periodo.service';
+import { ultimosPeriodos } from "../../shared/utils/periodo.util"; 
 import {
   CategoriaGasto,
   GastoReciente,
@@ -35,10 +36,9 @@ export class InicioComponent implements OnInit {
   primerNombre = this.usuario?.nombre?.split(" ")[0] ?? "de nuevo";
   inicialUsuario = (this.usuario?.nombre?.charAt(0) ?? "?").toUpperCase();
 
-  // Selector de período: por ahora solo cambia qué "mes de demostración"
-  // se pide al servicio. Cuando exista el backend real, este mismo
-  // valor se mandaría como query param a la API (ver DashboardService).
-  periodos = ["Junio 2026", "Julio 2026", "Agosto 2026", "Septiembre 2026", "Octubre 2026"];
+  // Selector de período: se genera dinámicamente con el mes actual y los
+  // anteriores (nunca meses futuros; el backend rechaza fechas futuras).
+  periodos = ultimosPeriodos(6);
   private periodoService = inject(PeriodoService); // <-- Inyectar el servicio
   periodoSeleccionado = this.periodoService.periodo; // <-- Usar el signal del servicio
   mostrarSelectorPeriodo = signal(false);
@@ -49,7 +49,8 @@ export class InicioComponent implements OnInit {
   ultimosGastos = signal<GastoReciente[]>([]);
   cargando = signal(true);
 
-  balance = computed(() => this.resumen().ingresos - this.resumen().gastos);
+  // "Dinero disponible": ingresos del período - gastos del período.
+  disponible = computed(() => this.resumen().ingresos - this.resumen().gastos);
 
   // "Quick financial insight": % de los ingresos que ya se gastó.
   // Se calcula a partir de los mismos datos del resumen, no es un
