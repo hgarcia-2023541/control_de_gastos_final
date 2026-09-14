@@ -26,6 +26,32 @@
       </button>
     </div>
 
+    <!-- Mensaje de cuenta creada (llega desde /registro vía router state) -->
+    <div class="mensaje-registro" *ngIf="mensajeRegistro">
+      <span class="mensaje-registro__icono">✓</span>
+      <span class="mensaje-registro__texto">{{ mensajeRegistro }}</span>
+      <button
+        type="button"
+        class="mensaje-registro__btn"
+        (click)="aceptarMensajeRegistro()"
+      >
+        Aceptar
+      </button>
+    </div>
+
+    <!-- Confirmación de cierre de sesión (llega desde el sidebar) -->
+    <div class="mensaje-registro" *ngIf="mensajeLogout">
+      <span class="mensaje-registro__icono">✓</span>
+      <span class="mensaje-registro__texto">{{ mensajeLogout }}</span>
+      <button
+        type="button"
+        class="mensaje-registro__btn"
+        (click)="aceptarMensajeLogout()"
+      >
+        Aceptar
+      </button>
+    </div>
+
     <form [formGroup]="formulario" (ngSubmit)="enviar()" class="login-form">
       <div class="campo">
         <label for="correo">Correo</label>
@@ -65,5 +91,16 @@
         <p>¿No tiene cuenta? <a routerLink="/registro">Regístrese aquí</a></p>
       </div>
     </form>
+
+    <!-- Login con Google (se oculta si no hay googleClientId configurado) -->
+    <div class="login-google" *ngIf="googleConfigurado">
+      <div class="login-divisor">
+        <span>o continúe con</span>
+      </div>
+      <div id="boton-google" class="boton-google"></div>
+      <small class="error error--general" *ngIf="cargandoGoogle">
+        Verificando con Google…
+      </small>
+    </div>
   </div>
 </div>

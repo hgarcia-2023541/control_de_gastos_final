@@ -1,8 +1,11 @@
+export type TipoMovimiento = "fijo" | "variable";
+
 export interface Ingreso {
   id: number;
   descripcion: string;
   fuente: string;
   categoria: string;
+  tipo: TipoMovimiento;
   monto: number;
   fecha: string; // "yyyy-mm-dd"
 }
@@ -13,6 +16,7 @@ export interface IngresoFormulario {
   descripcion: string;
   fuente: string;
   categoria: string;
+  tipo: TipoMovimiento;
   monto: number;
   fecha: string;
 }

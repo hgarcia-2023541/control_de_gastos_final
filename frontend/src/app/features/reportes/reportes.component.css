@@ -61,3 +61,213 @@
     padding: 24px 18px 36px;
   }
 }
+
+/* ---------- Reportes ---------- */
+.pagina-seccion__header--fila {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.perfil-usuario {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  color: #fcf8f4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  box-shadow: 0 2px 8px rgba(139, 115, 85, 0.35);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.perfil-usuario__foto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.controles-periodo {
+  position: relative;
+}
+
+.selector-periodo {
+  padding: 9px 16px;
+  border: 1px solid var(--cream-deeper);
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--text-dark);
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+.selector-periodo:hover {
+  border-color: var(--gold);
+  box-shadow: 0 4px 14px rgba(139, 115, 85, 0.18);
+}
+
+.selector-periodo__flecha {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.selector-periodo__lista {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 180px;
+  background: #fcf8f4;
+  border: 1px solid var(--cream-deeper);
+  border-radius: var(--radius);
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  box-shadow: 0 10px 30px rgba(44, 24, 16, 0.15);
+  z-index: 20;
+}
+
+.selector-periodo__lista li {
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.86rem;
+  color: var(--text-medium);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.selector-periodo__lista li:hover {
+  background: var(--cream-dark);
+  color: var(--text-dark);
+}
+
+/* Resumen anual */
+.resumen-anual {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.resumen-item {
+  background: var(--cream);
+  border: 1px solid var(--cream-deeper);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-md);
+}
+
+.resumen-item__titulo {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-soft);
+}
+
+.resumen-item__monto {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--text-dark);
+}
+
+.resumen-item--negativo {
+  background: #fbe9e4;
+  border-color: #e0a08d;
+}
+
+.resumen-item--negativo .resumen-item__monto {
+  color: #9c3a24;
+}
+
+/* Paneles */
+.panel {
+  background: var(--cream);
+  border: 1px solid var(--cream-deeper);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 22px;
+}
+
+.panel h2 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--text-dark);
+  margin: 0 0 16px;
+}
+
+.paneles-donut {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+/* Tabla mensual */
+.tabla-contenedor {
+  overflow-x: auto;
+}
+
+.tabla-reporte {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.tabla-reporte th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--cream-deeper);
+  color: var(--text-soft);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tabla-reporte td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--cream-deeper);
+  color: var(--text-dark);
+}
+
+.tabla-reporte__mes {
+  font-weight: 600;
+}
+
+.tabla-reporte td.negativo {
+  color: #9c3a24;
+  font-weight: 600;
+}
+
+.sin-datos {
+  color: var(--text-soft);
+  font-size: 0.88rem;
+  padding: 16px 0;
+  margin: 0;
+}
+
+.sin-datos--error {
+  color: #a33b22;
+}
+
+@media (max-width: 900px) {
+  .resumen-anual {
+    grid-template-columns: 1fr;
+  }
+  .paneles-donut {
+    grid-template-columns: 1fr;
+  }
+}

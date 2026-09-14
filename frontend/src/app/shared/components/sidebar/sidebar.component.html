@@ -8,6 +8,24 @@
 
   <nav class="sidebar-nav">
     <a
+      *ngIf="usuario"
+      class="sidebar-usuario"
+      routerLink="/configuracion"
+      [title]="usuario.correo || ''"
+    >
+      <span class="sidebar-usuario__foto">
+        <img
+          *ngIf="usuario.fotoUrl"
+          [src]="usuario.fotoUrl"
+          alt="Foto de perfil"
+          class="sidebar-usuario__img"
+        />
+        <span *ngIf="!usuario.fotoUrl">{{ inicialUsuario }}</span>
+      </span>
+      <span class="sidebar-usuario__nombre">{{ usuario.nombre }}</span>
+    </a>
+
+    <a
       *ngFor="let item of items"
       [routerLink]="item.ruta"
       routerLinkActive="activo"

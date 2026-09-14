@@ -26,7 +26,13 @@
         </div>
 
         <div class="perfil-usuario" [title]="usuario?.correo || ''">
-          {{ inicialUsuario }}
+          <img
+            *ngIf="usuario?.fotoUrl"
+            [src]="usuario?.fotoUrl"
+            alt="Foto de perfil"
+            class="perfil-usuario__foto"
+          />
+          <span *ngIf="!usuario?.fotoUrl">{{ inicialUsuario }}</span>
         </div>
       </div>
     </header>
@@ -84,7 +90,10 @@
   <p class="tarjeta__monto">Q {{ formatoQuetzales(resumen().gastos) }}</p>
 </article>
 
-      <article class="tarjeta tarjeta--balance">
+      <article
+        class="tarjeta tarjeta--balance"
+        [class.tarjeta--excepcion]="disponible() < 0"
+      >
         <div class="tarjeta__iconos">
           <span class="tarjeta__icono">
             <svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M7 7h10M4 7l3-4 3 4M20 7l-3-4-3 4M4 7c0 2 1.3 3.5 3 3.5S10 9 10 7M14 7c0 2 1.3 3.5 3 3.5S20 9 20 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -93,8 +102,16 @@
             <img src="/cartera.svg" alt="Cartera">
           </span>
         </div>
-        <p class="tarjeta__titulo">Balance</p>
-        <p class="tarjeta__monto">Q {{ formatoQuetzales(balance()) }}</p>
+        <p class="tarjeta__titulo">Dinero disponible</p>
+        <p class="tarjeta__monto">Q {{ formatoQuetzales(disponible()) }}</p>
+        <p class="tarjeta__detalle">
+          <ng-container *ngIf="disponible() < 0; else okDisponible">
+            Sus gastos superan sus ingresos del período
+          </ng-container>
+          <ng-template #okDisponible>
+            Ingresos del mes menos gastos del mes
+          </ng-template>
+        </p>
       </article>
     </section>
 
@@ -163,6 +180,9 @@
                   <svg *ngSwitchCase="'Hogar'" class="categoria-pill__icono" viewBox="0 0 24 24" fill="none">
                     <path d="M4 11.5 12 4l8 7.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M6 10v9a1 1 0 0 0 1 1h3v-5a2 2 0 0 1 4 0v5h3a1 1 0 0 0 1-1v-9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <svg *ngSwitchCase="'Salud'" class="categoria-pill__icono" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 21s-7-4.5-9.5-9C.8 8.3 2 5 5 5c1.8 0 3.2 1 4 2.3C9.8 6 11.2 5 13 5c3 0 4.2 3.3 2.5 7-2.5 4.5-9.5 9-9.5 9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
                   </svg>
                   <svg *ngSwitchDefault class="categoria-pill__icono" viewBox="0 0 24 24" fill="none">
                     <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6"/>

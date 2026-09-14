@@ -1,41 +1,157 @@
 # Control de Gastos
 
-Aplicación web para el control de gastos e ingresos personales, con arquitectura orientada a componentes, separada en `frontend/` (Angular) y `backend/` (Node.js + Express + TypeScript + PostgreSQL).
+Aplicación web para el control de gastos e ingresos personales, desarrollada con una arquitectura separada entre `frontend/` y `backend/`.
 
-## Estado actual
+El sistema permite registrar y administrar ingresos y gastos, organizar movimientos mediante categorías, consultar reportes financieros y administrar la información del perfil del usuario.
 
-- ✅ **Login** con JWT, dos roles (`admin` / `user`).
-- ✅ **Dashboard** con tarjetas, gráfico de ingresos vs. gastos y gráfico de categorías.
-- ✅ **Ingresos**: CRUD completo conectado a PostgreSQL, filtros (búsqueda, fecha, categoría), gráfico de fuentes de ingreso — todo real, sin datos quemados.
-- 🕓 **Gastos**: todavía con datos de demostración (próxima etapa).
-- 🕓 Reportes, Categorías y Configuración: pantallas "próximamente".
+## Tecnologías utilizadas
 
-## Estructura
+### Frontend
+- Angular 22
+- TypeScript
+- HTML5
+- CSS3
+- Angular Signals
+- Angular Router
+- Chart components para visualización de datos
 
-```
+### Backend
+- Node.js
+- Express
+- TypeScript
+- PostgreSQL
+- JWT
+- bcryptjs
+- Zod
+- pg
+
+### Herramientas
+- pnpm
+- Git / GitHub
+
+---
+
+## Funcionalidades
+
+###  Autenticación y usuarios
+
+- Inicio de sesión con correo y contraseña.
+- Autenticación mediante Google.
+- Registro de nuevos usuarios.
+- Contraseñas protegidas mediante hash con bcrypt.
+- Autenticación mediante JWT.
+- Control de acceso mediante roles (`admin` / `user`).
+- Protección de rutas mediante guard.
+- Interceptor HTTP para enviar el token automáticamente.
+- Manejo de sesiones expiradas.
+- Cierre de sesión manual.
+- Cierre automático por inactividad.
+- Mensajes de confirmación para acciones de sesión.
+
+###  Ingresos
+
+- Crear ingresos.
+- Editar ingresos.
+- Eliminar ingresos.
+- Consultar ingresos registrados.
+- Filtrar por búsqueda, fechas y categoría.
+- Clasificar ingresos como fijos o variables.
+- Validar que no se registren fechas futuras.
+- Visualizar estadísticas mensuales y anuales.
+- Gráfico de fuentes de ingreso.
+- Información almacenada directamente en PostgreSQL.
+
+###  Gastos
+
+- Crear gastos.
+- Editar gastos.
+- Eliminar gastos.
+- Consultar gastos registrados.
+- Filtrar por búsqueda, fechas y categoría.
+- Clasificar gastos como fijos o variables.
+- Validar que no se registren fechas futuras.
+- Control de fondos disponibles.
+- El sistema evita registrar un gasto cuando supera el dinero disponible.
+- Visualizar estadísticas mensuales y anuales.
+- Gráfico de gastos por categoría.
+- Información almacenada directamente en PostgreSQL.
+
+###  Dashboard
+
+El Dashboard presenta información financiera real obtenida desde la base de datos.
+
+Incluye:
+
+- Total de ingresos.
+- Total de gastos.
+- Dinero disponible.
+- Comparación de ingresos y gastos.
+- Evolución de los movimientos durante los últimos períodos.
+- Gráfico de categorías de gastos.
+- Listado de últimos gastos registrados.
+
+Los valores mostrados se calculan dinámicamente y no utilizan datos de demostración.
+
+###  Categorías
+
+- Categorías para ingresos y gastos.
+- Separación entre categorías de ingresos y categorías de gastos.
+- Creación de categorías personalizadas.
+- Edición de categorías propias.
+- Eliminación de categorías propias.
+- Identificación de categorías del sistema.
+- Protección de categorías del sistema para evitar modificaciones no permitidas.
+
+###  Reportes
+
+- Selección del año a consultar.
+- Comparación mensual de ingresos y gastos.
+- Gráfico de evolución financiera.
+- Gráfico de gastos por categoría.
+- Gráfico de ingresos por fuente.
+- Tabla con información mensual.
+- Resumen anual de ingresos, gastos y dinero disponible.
+
+###  Configuración
+
+- Edición del nombre del usuario.
+- Actualización de fotografía de perfil.
+- Preferencia de símbolo de moneda.
+- Persistencia de la información del perfil.
+
+---
+
+## Estructura del proyecto
+
+```text
 control-de-gastos/
 ├── backend/
 │   └── src/
-│       ├── config/          # conexión a PostgreSQL
-│       ├── middlewares/     # manejo de errores y verificación de JWT/roles
+│       ├── config/              # Configuración y conexión a PostgreSQL
+│       ├── middlewares/         # Manejo de errores y autenticación
+│       ├── utils/               # Utilidades compartidas
 │       └── modules/
-│           ├── app.ts       # configuración de Express
-│           ├── server.ts    # arranque del servidor
-│           ├── auth/        # login (controllers, services, models, routes)
-│           ├── ingresos/    # CRUD de ingresos (mismo patrón que auth)
-│           └── expenses/    # carpetas listas para la siguiente etapa (gastos)
+│           ├── app.ts           # Configuración de Express
+│           ├── server.ts        # Arranque del servidor
+│           ├── auth/            # Autenticación y usuarios
+│           ├── ingresos/        # Gestión de ingresos
+│           ├── expenses/        # Gestión de gastos
+│           └── categorias/      # Gestión de categorías
+│
 └── frontend/
     └── src/app/
-        ├── core/             # servicios compartidos (auth, dashboard, ingresos)
-        ├── shared/           # sidebar, gráficos (línea/dona), modelos, utils
+        ├── core/                # Servicios, modelos, guards e interceptor
+        ├── shared/              # Componentes y modelos compartidos
         └── features/
-            ├── landing/      # página de bienvenida
-            ├── login/        # inicio de sesión
-            ├── registro/     # pantalla informativa (el alta real la hace un admin)
-            ├── inicio/       # Dashboard
-            ├── ingresos/     # gestión de ingresos
-            └── gastos, reportes, categorias, configuracion/  # próximamente
-```
+            ├── landing/         # Página de bienvenida
+            ├── login/           # Inicio de sesión
+            ├── registro/        # Registro de usuarios
+            ├── inicio/          # Dashboard
+            ├── ingresos/        # Gestión de ingresos
+            ├── gastos/          # Gestión de gastos
+            ├── reportes/        # Reportes financieros
+            ├── categorias/      # Gestión de categorías
+            └── configuracion/   # Configuración del perfil
 
 ## Backend
 
@@ -76,16 +192,41 @@ control-de-gastos/
 
 ### Endpoints principales
 
-```
-POST   /api/auth/login          Iniciar sesión
+Autenticación
+POST   /api/auth/login       Iniciar sesión
+POST   /api/auth/registro    Registrar usuario
+POST   /api/auth/google      Iniciar sesión con Google
+GET    /api/auth/perfil      Obtener perfil
+PATCH  /api/auth/perfil      Actualizar perfil
+Ingresos
+GET    /api/ingresos
+POST   /api/ingresos
+PUT    /api/ingresos/:id
+DELETE /api/ingresos/:id
 
-GET    /api/ingresos            Listar ingresos del usuario autenticado
-                                 (query params: busqueda, fechaInicio, fechaFin, categoria)
-POST   /api/ingresos            Crear ingreso
-PUT    /api/ingresos/:id        Editar ingreso
-DELETE /api/ingresos/:id        Eliminar ingreso
-```
-Todas las rutas de `/api/ingresos` requieren el header `Authorization: Bearer <token>` y solo devuelven/afectan datos del usuario autenticado.
+Los ingresos permiten filtros mediante parámetros como:
+
+busqueda
+fechaInicio
+fechaFin
+categoria
+Gastos
+GET    /api/expenses
+POST   /api/expenses
+PUT    /api/expenses/:id
+DELETE /api/expenses/:id
+
+Los gastos permiten filtros mediante parámetros como:
+
+busqueda
+fechaInicio
+fechaFin
+categoria
+Categorías
+GET    /api/categorias
+POST   /api/categorias
+PUT    /api/categorias/:id
+DELETE /api/categorias/:id
 
 ## Frontend
 
@@ -100,8 +241,8 @@ Todas las rutas de `/api/ingresos` requieren el header `Authorization: Bearer <t
    ```
 3. Abre `http://localhost:4200`.
 
-## Próximos pasos
+### Autor
 
-- Implementar el módulo `expenses` en el backend siguiendo el mismo patrón que `ingresos` (las carpetas ya están creadas y vacías).
-- Conectar la pantalla de Gastos a datos reales, igual que se hizo con Ingresos.
-- Ir completando Reportes, Categorías y Configuración.
+Herbert García
+
+Proyecto académico de desarrollo web full-stack.

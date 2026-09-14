@@ -4,8 +4,8 @@ import express, { Request, Response } from "express";
 import { errorHandler } from "../middlewares/errorHandler";
 import authRoutes from "./auth/routes/auth.routes";
 import ingresosRoutes from "./ingresos/routes/ingreso.routes";
-// La próxima etapa se agregará aquí el módulo de expenses (gastos):
-// import expensesRoutes from "./expenses/routes/expenses.routes";
+import expensesRoutes from "./expenses/routes/gasto.routes";
+import categoriasRoutes from "./categorias/routes/categoria.routes";
 
 export const app = express();
 
@@ -21,7 +21,8 @@ app.get("/api/health", (_req: Request, res: Response) => {
 // --- Registro de rutas de cada módulo ---
 app.use("/api/auth", authRoutes);
 app.use("/api/ingresos", ingresosRoutes);
-// app.use("/api/expenses", expensesRoutes);
+app.use("/api/expenses", expensesRoutes);
+app.use("/api/categorias", categoriasRoutes);
 
 // --- Middleware de errores: SIEMPRE al final, después de las rutas ---
 app.use(errorHandler);

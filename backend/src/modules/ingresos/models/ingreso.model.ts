@@ -1,11 +1,14 @@
 import { pool } from "../../../config/db";
 
+export type TipoMovimiento = "fijo" | "variable";
+
 export interface Ingreso {
   id: number;
   usuario_id: number;
   descripcion: string;
   fuente: string;
   categoria: string;
+  tipo: TipoMovimiento;
   monto: string; // NUMERIC llega como string desde pg; se castea en el service
   fecha: string; // DATE llega como "yyyy-mm-dd"
   creado_en: Date;
@@ -16,13 +19,13 @@ export interface FiltrosIngreso {
   fechaInicio?: string;
   fechaFin?: string;
   categoria?: string;
-  periodo?: string; // <-- AGREGAR ESTA LÍNEA
 }
 
 export interface DatosIngreso {
   descripcion: string;
   fuente: string;
   categoria: string;
+  tipo: TipoMovimiento;
   monto: number;
   fecha: string;
 }
@@ -60,30 +63,8 @@ export async function listarIngresosPorUsuario(
     condiciones.push(`categoria = $${valores.length}`);
   }
 
-  if (filtros.periodo) {
-    // Asumiendo que el período viene como "Septiembre 2026"
-    // Necesitas parsearlo a mes/año
-    const [mes, anio] = filtros.periodo.split(' ');
-    const meses = {
-      'Enero': 1, 'Febrero': 2, 'Marzo': 3, 'Abril': 4,
-      'Mayo': 5, 'Junio': 6, 'Julio': 7, 'Agosto': 8,
-      'Septiembre': 9, 'Octubre': 10, 'Noviembre': 11, 'Diciembre': 12
-    };
-    const mesNumero = meses[mes as keyof typeof meses];
-    
-    if (mesNumero && anio) {
-      valores.push(anio);
-      valores.push(mesNumero);
-      const idxAnio = valores.length - 1;
-	const idxMes = valores.length;
-      condiciones.push(
-        `EXTRACT(YEAR FROM fecha) = $${idxAnio} AND EXTRACT(MONTH FROM fecha) = $${idxMes}`
-      );
-    }
-  }
-
   const resultado = await pool.query<Ingreso>(
-    `SELECT id, usuario_id, descripcion, fuente, categoria, monto, fecha, creado_en
+    `SELECT id, usuario_id, descripcion, fuente, categoria, tipo, monto, fecha, creado_en
     FROM ingresos
     WHERE ${condiciones.join(" AND ")}
     ORDER BY fecha DESC, creado_en DESC`,
@@ -98,7 +79,7 @@ export async function obtenerIngresoPorId(
   usuarioId: number
 ): Promise<Ingreso | null> {
   const resultado = await pool.query<Ingreso>(
-    `SELECT id, usuario_id, descripcion, fuente, categoria, monto, fecha, creado_en
+    `SELECT id, usuario_id, descripcion, fuente, categoria, tipo, monto, fecha, creado_en
      FROM ingresos
      WHERE id = $1 AND usuario_id = $2`,
     [id, usuarioId]
@@ -112,10 +93,10 @@ export async function crearIngreso(
   datos: DatosIngreso
 ): Promise<Ingreso> {
   const resultado = await pool.query<Ingreso>(
-    `INSERT INTO ingresos (usuario_id, descripcion, fuente, categoria, monto, fecha)
-     VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING id, usuario_id, descripcion, fuente, categoria, monto, fecha, creado_en`,
-    [usuarioId, datos.descripcion, datos.fuente, datos.categoria, datos.monto, datos.fecha]
+    `INSERT INTO ingresos (usuario_id, descripcion, fuente, categoria, tipo, monto, fecha)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id, usuario_id, descripcion, fuente, categoria, tipo, monto, fecha, creado_en`,
+    [usuarioId, datos.descripcion, datos.fuente, datos.categoria, datos.tipo, datos.monto, datos.fecha]
   );
 
   return resultado.rows[0];
@@ -130,10 +111,10 @@ export async function actualizarIngreso(
 ): Promise<Ingreso | null> {
   const resultado = await pool.query<Ingreso>(
     `UPDATE ingresos
-     SET descripcion = $1, fuente = $2, categoria = $3, monto = $4, fecha = $5
-     WHERE id = $6 AND usuario_id = $7
-     RETURNING id, usuario_id, descripcion, fuente, categoria, monto, fecha, creado_en`,
-    [datos.descripcion, datos.fuente, datos.categoria, datos.monto, datos.fecha, id, usuarioId]
+     SET descripcion = $1, fuente = $2, categoria = $3, tipo = $4, monto = $5, fecha = $6
+     WHERE id = $7 AND usuario_id = $8
+     RETURNING id, usuario_id, descripcion, fuente, categoria, tipo, monto, fecha, creado_en`,
+    [datos.descripcion, datos.fuente, datos.categoria, datos.tipo, datos.monto, datos.fecha, id, usuarioId]
   );
 
   return resultado.rows[0] ?? null;

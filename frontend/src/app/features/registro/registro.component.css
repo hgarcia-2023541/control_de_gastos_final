@@ -287,3 +287,102 @@
   transform: translateY(-2px);
   box-shadow: 0 2px 8px rgba(44, 24, 16, 0.05);
 }
+
+/* ---------- Formulario de registro (real) ---------- */
+.registro-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.campo label {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--text-medium);
+}
+
+.campo input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--cream-deeper);
+  border-radius: 8px;
+  background: var(--cream);
+  color: var(--text-dark);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+.campo input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(196, 168, 130, 0.18);
+  background: #fff;
+}
+
+.error {
+  color: #b3472e;
+  font-size: 0.76rem;
+}
+
+.error--general {
+  text-align: center;
+  background: #fbe9e4;
+  border: 1px solid #f2c9bc;
+  border-radius: var(--radius);
+  padding: 8px 10px;
+}
+
+.registro-form button[type="submit"] {
+  margin-top: 4px;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  color: #fcf8f4;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  box-shadow: 0 4px 14px rgba(139, 115, 85, 0.35);
+}
+
+.registro-form button[type="submit"]:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(139, 115, 85, 0.45);
+}
+
+.registro-form button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.registro-aviso {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+
+.registro-enlace {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-medium);
+}
+
+.registro-enlace a {
+  color: var(--gold-dark);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.registro-enlace a:hover {
+  text-decoration: underline;
+}

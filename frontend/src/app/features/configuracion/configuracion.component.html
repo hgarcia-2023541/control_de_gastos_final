@@ -2,17 +2,84 @@
   <app-sidebar></app-sidebar>
 
   <main class="pagina-seccion__contenido">
-    <header class="pagina-seccion__header">
-      <h1>Configuración</h1>
-      <p>Aquí podrás editar los datos de tu cuenta y tus preferencias.</p>
+    <header class="pagina-seccion__header pagina-seccion__header--fila">
+      <div>
+        <h1>Configuración</h1>
+        <p>Edite los datos de su cuenta y sus preferencias.</p>
+      </div>
+      <div class="perfil-usuario" [title]="usuario?.correo || ''">
+        <img
+          *ngIf="usuario?.fotoUrl"
+          [src]="usuario?.fotoUrl"
+          alt="Foto de perfil"
+          class="perfil-usuario__foto"
+        />
+        <span *ngIf="!usuario?.fotoUrl">{{ inicialUsuario }}</span>
+      </div>
     </header>
 
-    <section class="pagina-seccion__vacio">
-      <span class="pagina-seccion__badge">Próximamente</span>
-      <p>
-        Esta sección ya está conectada al menú y a la navegación; solo falta
-        completar aquí el contenido cuando el backend correspondiente esté listo.
-      </p>
+    <section class="panel-config">
+      <h2>Mi perfil</h2>
+
+      <div class="foto-perfil">
+        <div class="foto-perfil__preview">
+          <img
+            *ngIf="usuario?.fotoUrl"
+            [src]="usuario?.fotoUrl"
+            alt="Foto de perfil"
+          />
+          <span *ngIf="!usuario?.fotoUrl">{{ inicialUsuario }}</span>
+        </div>
+        <div class="foto-perfil__info">
+          <p class="foto-perfil__nombre">{{ usuario?.nombre }}</p>
+          <p class="foto-perfil__correo">{{ usuario?.correo }}</p>
+          <p class="foto-perfil__rol">
+            {{ usuario?.rol === "admin" ? "Administrador" : "Usuario" }}
+          </p>
+        </div>
+      </div>
+
+      <form [formGroup]="formulario" (ngSubmit)="guardar()" class="form-perfil">
+        <div class="campo">
+          <label for="nombre">Nombre</label>
+          <input id="nombre" type="text" formControlName="nombre" />
+          <small
+            class="error"
+            *ngIf="formulario.get('nombre')?.invalid && formulario.get('nombre')?.touched"
+          >
+            El nombre es obligatorio (mínimo 2 caracteres).
+          </small>
+        </div>
+
+        <div class="campo">
+          <label for="fotoUrl">Foto de perfil (URL o data URL)</label>
+          <input
+            id="fotoUrl"
+            type="text"
+            formControlName="fotoUrl"
+            placeholder="https://...  o  data:image/png;base64,..."
+          />
+          <small class="ayuda">
+            No se suben archivos: pegue la dirección de una imagen o una imagen en
+            base64 (data URL).
+          </small>
+        </div>
+
+        <div class="campo campo--opciones">
+          <label class="opcion">
+            <input type="checkbox" [(ngModel)]="mostrarMonedaConSimbolo" [ngModelOptions]="{ standalone: true }" />
+            <span>Mostrar la moneda con el símbolo Q</span>
+          </label>
+          <small class="ayuda">Preferencia guardada en su cuenta.</small>
+        </div>
+
+        <small class="error error--general" *ngIf="errorMensaje">{{ errorMensaje }}</small>
+        <small class="exito" *ngIf="mensajeExito">{{ mensajeExito }}</small>
+
+        <button type="submit" class="btn-primario" [disabled]="guardando">
+          {{ guardando ? "Guardando..." : "Guardar cambios" }}
+        </button>
+      </form>
     </section>
   </main>
 </div>

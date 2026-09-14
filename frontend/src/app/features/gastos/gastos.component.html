@@ -1,18 +1,299 @@
-<div class="pagina-seccion">
+<div class="gastos">
   <app-sidebar></app-sidebar>
 
-  <main class="pagina-seccion__contenido">
-    <header class="pagina-seccion__header">
-      <h1>Gastos</h1>
-      <p>Aquí podrás registrar, consultar, editar y eliminar tus gastos.</p>
+  <main class="gastos-main">
+
+    <!-- Mensajes flotantes de éxito/error -->
+    <div class="toast toast--exito" *ngIf="mensajeExito()">{{ mensajeExito() }}</div>
+    <div class="toast toast--error" *ngIf="errorOperacion()" (click)="errorOperacion.set(null)">
+      {{ errorOperacion() }} <span>✕</span>
+    </div>
+
+    <!-- Encabezado -->
+    <header class="gastos-header">
+      <div class="gastos-header__titulo">
+        <h1>Gastos 👋</h1>
+        <p>Administre y consulte sus gastos registrados.</p>
+      </div>
+
+      <div class="gastos-header__acciones">
+        <div class="selector-periodo">
+          <button type="button" (click)="alternarSelectorPeriodo()">
+            {{ periodoSeleccionado() }}
+            <svg viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <ul class="selector-periodo__lista" *ngIf="mostrarSelectorPeriodo()">
+            <li *ngFor="let periodo of periodos" (click)="seleccionarPeriodo(periodo)">{{ periodo }}</li>
+          </ul>
+        </div>
+        <div class="perfil-usuario" [title]="usuario?.correo || ''">
+          <img
+            *ngIf="usuario?.fotoUrl"
+            [src]="usuario?.fotoUrl"
+            alt="Foto de perfil"
+            class="perfil-usuario__foto"
+          />
+          <span *ngIf="!usuario?.fotoUrl">{{ inicialUsuario }}</span>
+        </div>
+      </div>
     </header>
 
-    <section class="pagina-seccion__vacio">
-      <span class="pagina-seccion__badge">Próximamente</span>
-      <p>
-        Esta sección ya está conectada al menú y a la navegación; solo falta
-        completar aquí el contenido cuando el backend correspondiente esté listo.
-      </p>
+    <!-- Tarjetas -->
+    <section class="tarjetas">
+      <article class="tarjeta">
+        <div class="tarjeta__iconos">
+          <span class="tarjeta__icono">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M6 13l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="tarjeta__icono tarjeta__icono--secundario">
+            <img src="/papel.svg" alt="Recibo">
+          </span>
+        </div>
+        <p class="tarjeta__titulo">Gastos del año</p>
+        <p class="tarjeta__monto">Q {{ formatoQuetzales(gastosDelAnio()) }}</p>
+        <p class="tarjeta__descripcion">Total gastado en {{ anioSeleccionado() }}</p>
+      </article>
+
+      <article class="tarjeta">
+        <div class="tarjeta__iconos">
+          <span class="tarjeta__icono">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M6 13l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="tarjeta__icono tarjeta__icono--secundario">
+            <img src="/reloj.svg" alt="Reloj">
+          </span>
+        </div>
+        <p class="tarjeta__titulo">Gastos del mes</p>
+        <p class="tarjeta__monto">Q {{ formatoQuetzales(gastosDelMes()) }}</p>
+        <p class="tarjeta__descripcion">Gastos registrados este mes</p>
+      </article>
+
+      <article class="tarjeta" [class.tarjeta--excepcion]="disponibleNegativo()">
+        <div class="tarjeta__iconos">
+          <span class="tarjeta__icono">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M6 13l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="tarjeta__icono tarjeta__icono--secundario">
+            <img src="/cartera.svg" alt="Cartera">
+          </span>
+        </div>
+        <p class="tarjeta__titulo">Dinero disponible</p>
+        <p class="tarjeta__monto">Q {{ formatoQuetzales(dineroDisponible()) }}</p>
+        <p class="tarjeta__descripcion">
+          <ng-container *ngIf="disponibleNegativo(); else okDisponible">
+            Sus gastos del mes superan sus ingresos del mes
+          </ng-container>
+          <ng-template #okDisponible>
+            Ingresos del mes menos gastos del mes
+          </ng-template>
+        </p>
+      </article>
+    </section>
+
+    <!-- Barra de acciones: registrar + buscar + filtros -->
+    <section class="barra-acciones">
+      <button type="button" class="boton-registrar" (click)="abrirFormularioNuevo()">
+        <span>+</span> Registrar gasto
+      </button>
+
+      <div class="campo-busqueda">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input
+          type="text"
+          placeholder="Buscar gasto..."
+          [value]="busqueda()"
+          (input)="onBusquedaCambiada($any($event.target).value)"
+        />
+      </div>
+
+      <div class="filtro">
+        <button type="button" (click)="alternarFiltroFecha()" [class.filtro--activo]="hayFiltroFechaActivo">
+          Rango de fecha
+          <svg viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="filtro__panel" *ngIf="mostrarFiltroFecha()">
+          <label>
+            Desde
+            <input type="date" #fInicio [value]="fechaInicio()" />
+          </label>
+          <label>
+            Hasta
+            <input type="date" #fFin [value]="fechaFin()" />
+          </label>
+          <div class="filtro__panel-botones">
+            <button type="button" class="btn-secundario" (click)="limpiarFiltroFecha()">Limpiar</button>
+            <button type="button" class="btn-primario" (click)="aplicarFiltroFecha(fInicio.value, fFin.value)">Aplicar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="filtro">
+        <button type="button" (click)="alternarFiltroCategoria()" [class.filtro--activo]="categoriaFiltro()">
+          {{ categoriaFiltro() || "Categoría" }}
+          <svg viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <ul class="filtro__panel filtro__panel--lista" *ngIf="mostrarFiltroCategoria()">
+          <li (click)="limpiarFiltroCategoria()"><em>Todas</em></li>
+          <li *ngFor="let cat of categoriasSugeridas" (click)="seleccionarCategoriaFiltro(cat)">{{ cat }}</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Historial -->
+    <section class="panel panel--tabla">
+      <h2>Historial de gastos</h2>
+
+      <div class="tabla-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Descripción</th>
+              <th>Categoría</th>
+              <th>Tipo</th>
+              <th>Fecha</th>
+              <th>Cantidad</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="cargando()">
+              <td colspan="6" class="sin-datos">Cargando gastos...</td>
+            </tr>
+
+            <tr *ngFor="let gasto of gastosFiltrados()">
+              <td>{{ gasto.descripcion }}</td>
+              <td>{{ gasto.categoria }}</td>
+              <td>
+                <span class="tipo-pill" [class.tipo-pill--fijo]="gasto.tipo === 'fijo'">
+                  {{ gasto.tipo === "fijo" ? "Fijo" : "Variable" }}
+                </span>
+              </td>
+              <td>{{ formatoFecha(gasto.fecha) }}</td>
+              <td>Q {{ formatoQuetzales(gasto.monto) }}</td>
+              <td class="col-acciones">
+                <button type="button" class="accion-icono" title="Editar" (click)="abrirFormularioEdicion(gasto)">
+                  <svg viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18.5 9.5a1.5 1.5 0 0 0 0-2.1l-1.9-1.9a1.5 1.5 0 0 0-2.1 0L4 15v5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                </button>
+                <button type="button" class="accion-icono accion-icono--borrar" title="Eliminar" (click)="pedirConfirmacionEliminar(gasto)">
+                  <svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0 1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </td>
+            </tr>
+
+            <!-- Sin filtros activos: todavía no hay ningún gasto en el período -->
+            <tr *ngIf="!cargando() && !errorCarga() && gastosFiltrados().length === 0 && !hayAlgunFiltroActivo">
+              <td colspan="6" class="sin-datos">
+                No hay gastos registrados para este período.
+              </td>
+            </tr>
+
+            <!-- Con filtros activos: la búsqueda/filtro no encontró nada -->
+            <tr *ngIf="!cargando() && !errorCarga() && gastosFiltrados().length === 0 && hayAlgunFiltroActivo">
+              <td colspan="6" class="sin-datos">
+                No encontramos gastos que coincidan con tu búsqueda.
+              </td>
+            </tr>
+
+            <tr *ngIf="errorCarga()">
+              <td colspan="5" class="sin-datos sin-datos--error">{{ errorCarga() }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Gastos por categoría -->
+    <section class="panel panel--dona">
+      <h2>Gastos por categoría</h2>
+      <ng-container *ngIf="gastosPorCategoria().length > 0; else sinCategorias">
+        <app-donut-chart [datos]="gastosPorCategoria()"></app-donut-chart>
+      </ng-container>
+      <ng-template #sinCategorias>
+        <p class="sin-datos">Registre un gasto para ver la distribución por categoría.</p>
+      </ng-template>
     </section>
   </main>
+</div>
+
+<!-- Modal: crear/editar gasto -->
+<div class="modal-fondo" *ngIf="mostrarFormulario()" (click)="cerrarFormulario()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h2>{{ gastoEnEdicion() ? "Editar gasto" : "Registrar gasto" }}</h2>
+
+    <form [formGroup]="formulario" (ngSubmit)="guardarGasto()">
+      <div class="campo">
+        <label for="descripcion">Descripción</label>
+        <input id="descripcion" type="text" formControlName="descripcion" placeholder="Ej. Almuerzo" />
+        <small class="error" *ngIf="formulario.get('descripcion')?.invalid && formulario.get('descripcion')?.touched">
+          La descripción es obligatoria.
+        </small>
+      </div>
+
+      <div class="campo">
+        <label for="categoria">Categoría</label>
+        <input id="categoria" type="text" formControlName="categoria" placeholder="Ej. Alimentación" list="categorias-sugeridas" />
+        <datalist id="categorias-sugeridas">
+          <option *ngFor="let cat of categoriasSugeridas" [value]="cat"></option>
+        </datalist>
+        <small class="error" *ngIf="formulario.get('categoria')?.invalid && formulario.get('categoria')?.touched">
+          La categoría es obligatoria.
+        </small>
+      </div>
+
+      <div class="campo">
+        <label for="tipo">Tipo</label>
+        <select id="tipo" formControlName="tipo">
+          <option value="variable">Variable</option>
+          <option value="fijo">Fijo</option>
+        </select>
+        <small class="ayuda">
+          "Fijo/variable" es solo una clasificación; no genera recurrencia automática.
+        </small>
+      </div>
+
+      <div class="campo-fila">
+        <div class="campo">
+          <label for="monto">Cantidad (Q)</label>
+          <input id="monto" type="number" step="0.01" min="0.01" formControlName="monto" placeholder="0.00" />
+          <small class="error" *ngIf="formulario.get('monto')?.invalid && formulario.get('monto')?.touched">
+            Ingresa una cantidad mayor que cero.
+          </small>
+        </div>
+
+        <div class="campo">
+          <label for="fecha">Fecha</label>
+          <input id="fecha" type="date" [max]="fechaMaxima" formControlName="fecha" />
+          <small class="error" *ngIf="formulario.get('fecha')?.invalid && formulario.get('fecha')?.touched">
+            Selecciona una fecha válida.
+          </small>
+        </div>
+      </div>
+
+      <small class="error error--general" *ngIf="errorFormulario()">{{ errorFormulario() }}</small>
+
+      <div class="modal-botones">
+        <button type="button" class="btn-secundario" (click)="cerrarFormulario()" [disabled]="guardando()">Cancelar</button>
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+          {{ guardando() ? "Guardando..." : (gastoEnEdicion() ? "Guardar cambios" : "Registrar gasto") }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: confirmar eliminación -->
+<div class="modal-fondo" *ngIf="gastoAEliminar() as gasto" (click)="cancelarEliminacion()">
+  <div class="modal modal--confirmacion" (click)="$event.stopPropagation()">
+    <h2>¿Eliminar este gasto?</h2>
+    <p>
+      Vas a eliminar <strong>"{{ gasto.descripcion }}"</strong> por
+      <strong>Q {{ formatoQuetzales(gasto.monto) }}</strong>. Esta acción no se puede deshacer.
+    </p>
+    <div class="modal-botones">
+      <button type="button" class="btn-secundario" (click)="cancelarEliminacion()" [disabled]="eliminando()">Cancelar</button>
+      <button type="button" class="btn-peligro" (click)="confirmarEliminacion()" [disabled]="eliminando()">
+        {{ eliminando() ? "Eliminando..." : "Sí, eliminar" }}
+      </button>
+    </div>
+  </div>
 </div>

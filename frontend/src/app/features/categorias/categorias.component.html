@@ -2,17 +2,180 @@
   <app-sidebar></app-sidebar>
 
   <main class="pagina-seccion__contenido">
-    <header class="pagina-seccion__header">
-      <h1>Categorías</h1>
-      <p>Aquí podrás crear, editar y eliminar tus categorías de gasto.</p>
+    <!-- Toasts -->
+    <div class="toast toast--exito" *ngIf="mensajeExito()">{{ mensajeExito() }}</div>
+    <div class="toast toast--error" *ngIf="errorOperacion()" (click)="errorOperacion.set(null)">
+      {{ errorOperacion() }} <span class="toast__cerrar">✕</span>
+    </div>
+
+    <header class="pagina-seccion__header pagina-seccion__header--fila">
+      <div>
+        <h1>Categorías</h1>
+        <p>Administre las categorías de ingresos y gastos de su cuenta.</p>
+      </div>
+      <div class="perfil-usuario" [title]="usuario?.correo || ''">
+        <img
+          *ngIf="usuario?.fotoUrl"
+          [src]="usuario?.fotoUrl"
+          alt="Foto de perfil"
+          class="perfil-usuario__foto"
+        />
+        <span *ngIf="!usuario?.fotoUrl">{{ inicialUsuario }}</span>
+      </div>
     </header>
 
-    <section class="pagina-seccion__vacio">
-      <span class="pagina-seccion__badge">Próximamente</span>
-      <p>
-        Esta sección ya está conectada al menú y a la navegación; solo falta
-        completar aquí el contenido cuando el backend correspondiente esté listo.
-      </p>
+    <section class="categorias-panel">
+      <div class="categorias-tabs">
+        <button
+          type="button"
+          class="categoria-tab"
+          [class.categoria-tab--activo]="tipoActivo === 'gasto'"
+          (click)="seleccionarTipo('gasto')"
+        >
+          Gastos
+        </button>
+        <button
+          type="button"
+          class="categoria-tab"
+          [class.categoria-tab--activo]="tipoActivo === 'ingreso'"
+          (click)="seleccionarTipo('ingreso')"
+        >
+          Ingresos
+        </button>
+
+        <button type="button" class="boton-agregar" (click)="abrirFormularioNuevo()">
+          + Agregar categoría
+        </button>
+      </div>
+
+      <p class="sin-datos" *ngIf="cargando()">Cargando categorías...</p>
+      <p class="sin-datos sin-datos--error" *ngIf="errorCarga()">{{ errorCarga() }}</p>
+
+      <ul class="categorias-lista" *ngIf="!cargando() && !errorCarga()">
+        <li *ngFor="let categoria of categoriasDelTipo()" class="categoria-item">
+          <span
+            class="categoria-item__color"
+            [style.background]="categoria.color ?? '#c4a882'"
+          ></span>
+          <span class="categoria-item__nombre">{{ categoria.nombre }}</span>
+          <span class="categoria-item__origen" *ngIf="categoria.usuarioId === null">
+            Del sistema
+          </span>
+          <span class="categoria-item__acciones">
+            <button
+              *ngIf="categoria.usuarioId !== null"
+              type="button"
+              class="accion-icono"
+              title="Editar categoría"
+              (click)="abrirFormularioEdicion(categoria)"
+            >
+              <svg viewBox="0 0 24 24" fill="none"><path d="M15.6 6.2a2.1 2.1 0 0 1 3 3L8.2 19.6l-4.1.9.9-4.1L15.6 6.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </button>
+            <button
+              *ngIf="categoria.usuarioId !== null"
+              type="button"
+              class="accion-icono accion-icono--borrar"
+              title="Eliminar categoría"
+              (click)="pedirConfirmacionEliminar(categoria)"
+            >
+              <svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0 1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </span>
+        </li>
+
+        <li *ngIf="categoriasDelTipo().length === 0" class="sin-datos">
+          Todavía no hay categorías de {{ tipoActivo === "gasto" ? "gasto" : "ingreso" }}.
+          Agregue la primera con "+ Agregar categoría".
+        </li>
+      </ul>
     </section>
   </main>
+</div>
+
+<!-- Modal: crear/editar categoría -->
+<div class="modal-fondo" *ngIf="mostrarFormulario()" (click)="cerrarFormulario()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h2>{{ categoriaEnEdicion() ? "Editar categoría" : "Nueva categoría" }}</h2>
+    <p class="modal-subtitulo">
+      {{ tipoActivo === "gasto" ? "Categoría de gasto" : "Categoría de ingreso" }}
+    </p>
+
+    <form [formGroup]="formulario" (ngSubmit)="guardar()">
+      <div class="campo">
+        <label for="nombre">Nombre</label>
+        <input
+          id="nombre"
+          type="text"
+          formControlName="nombre"
+          placeholder="Ej. Transporte"
+          maxlength="60"
+        />
+        <small
+          class="error"
+          *ngIf="formulario.get('nombre')?.invalid && formulario.get('nombre')?.touched"
+        >
+          El nombre es obligatorio (máximo 60 caracteres).
+        </small>
+      </div>
+
+      <div class="campo">
+        <label for="color">Color</label>
+        <div class="campo-color">
+          <input id="color" type="color" formControlName="color" />
+          <small class="ayuda">
+            Se usa como identificador visual en gráficas y listas.
+          </small>
+        </div>
+      </div>
+
+      <small class="error error--general" *ngIf="errorFormulario()">{{ errorFormulario() }}</small>
+
+      <div class="modal-botones">
+        <button
+          type="button"
+          class="btn-secundario"
+          (click)="cerrarFormulario()"
+          [disabled]="guardando()"
+        >
+          Cancelar
+        </button>
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+          {{ guardando() ? "Guardando..." : (categoriaEnEdicion() ? "Guardar cambios" : "Crear categoría") }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: confirmar eliminación -->
+<div
+  class="modal-fondo"
+  *ngIf="categoriaAEliminar() as categoria"
+  (click)="cancelarEliminacion()"
+>
+  <div class="modal modal--confirmacion" (click)="$event.stopPropagation()">
+    <h2>¿Eliminar esta categoría?</h2>
+    <p>
+      Vas a eliminar la categoría <strong>"{{ categoria.nombre }}"</strong>.
+      Esta acción no se puede deshacer.
+    </p>
+    <div class="modal-botones">
+      <button
+        type="button"
+        class="btn-secundario"
+        (click)="cancelarEliminacion()"
+        [disabled]="eliminando()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="btn-peligro"
+        (click)="confirmarEliminacion()"
+        [disabled]="eliminando()"
+      >
+        {{ eliminando() ? "Eliminando..." : "Sí, eliminar" }}
+      </button>
+    </div>
+  </div>
 </div>
