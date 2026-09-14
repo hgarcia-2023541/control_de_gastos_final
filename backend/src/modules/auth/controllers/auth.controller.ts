@@ -4,6 +4,7 @@ import { catchAsync, AppError } from "../../../middlewares/errorHandler";
 import {
   autenticarConGoogle,
   autenticarUsuario,
+  refrescarToken,
   registrarUsuarioAdmin,
   registrarUsuarioPublico,
 } from "../services/auth.service";
@@ -257,5 +258,24 @@ export const desactivar = catchAsync(async (req: RequestConUsuario, res: Respons
   res.json({
     ok: true,
     mensaje: "Usuario desactivado exitosamente",
+  });
+});
+
+// Renovar sesión (POST /api/auth/refresh): requiere un token todavía
+// válido (verificarToken ya lo comprobó al llegar aquí). Devuelve un
+// token nuevo con la misma identidad y una expiración fresca, para que
+// el frontend pueda mantener la sesión viva mientras el usuario sigue
+// activo, sin que el JWT original expire a mitad de uso.
+export const refrescar = catchAsync(async (req: RequestConUsuario, res: Response) => {
+  if (!req.usuario) {
+    throw new AppError("No se pudo identificar al usuario autenticado", 401);
+  }
+
+  const token = refrescarToken(req.usuario);
+
+  res.json({
+    ok: true,
+    mensaje: "Sesión renovada",
+    data: { token },
   });
 });

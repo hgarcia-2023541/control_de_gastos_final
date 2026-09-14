@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  refrescar,
   login,
   registrar,
   registrarPublico,
@@ -26,6 +27,7 @@ router.post("/registrar", verificarToken, registrar);
 router.get("/usuarios", verificarToken, listar);
 router.patch("/usuarios/:id/rol", verificarToken, actualizarRol);
 router.patch("/usuarios/:id/desactivar", verificarToken, desactivar);
+router.post("/refresh", verificarToken, refrescar);
 
 // Perfil propio: cualquier usuario autenticado, solo sus propios datos.
 router.patch("/perfil", verificarToken, actualizarMiPerfil);

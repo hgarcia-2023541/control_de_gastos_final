@@ -241,3 +241,14 @@ async function verificarIdTokenGoogle(idToken: string): Promise<PerfilGoogle> {
     foto: typeof datos.picture === "string" ? datos.picture : null,
   };
 }
+
+// Renueva el JWT del usuario ya autenticado (mismo id/correo/rol) con
+// una expiración fresca. Se usa para mantener la sesión viva mientras
+// haya actividad real, sin tener que volver a pedir la contraseña.
+export function refrescarToken(usuario: {
+  id: number;
+  correo: string;
+  rol: string;
+}): string {
+  return generarToken(usuario);
+}
