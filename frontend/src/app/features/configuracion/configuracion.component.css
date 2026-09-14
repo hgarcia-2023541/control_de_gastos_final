@@ -61,3 +61,211 @@
     padding: 24px 18px 36px;
   }
 }
+
+/* ---------- Perfil (Configuración) ---------- */
+.pagina-seccion__header--fila {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.perfil-usuario {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  color: #fcf8f4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  box-shadow: 0 2px 8px rgba(139, 115, 85, 0.35);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.perfil-usuario__foto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.panel-config {
+  max-width: 560px;
+  background: var(--cream);
+  border: 1px solid var(--cream-deeper);
+  border-radius: var(--radius-lg);
+  padding: 26px 28px;
+  box-shadow: var(--shadow-md);
+}
+
+.panel-config h2 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--text-dark);
+  margin: 0 0 18px;
+}
+
+.foto-perfil {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--cream-deeper);
+}
+
+.foto-perfil__preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  color: #fcf8f4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.6rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.foto-perfil__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.foto-perfil__nombre {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-dark);
+}
+
+.foto-perfil__correo {
+  font-size: 0.84rem;
+  color: var(--text-medium);
+}
+
+.foto-perfil__rol {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--cream-dark);
+  color: var(--gold-dark);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.form-perfil {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.campo label {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--text-medium);
+}
+
+.campo input[type="text"] {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--cream-deeper);
+  border-radius: 8px;
+  background: var(--cream);
+  color: var(--text-dark);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+.campo input[type="text"]:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(196, 168, 130, 0.18);
+  background: #fff;
+}
+
+.campo .ayuda {
+  font-size: 0.74rem;
+  color: var(--text-soft);
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--text-dark);
+  cursor: pointer;
+}
+
+.opcion input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--gold-dark);
+}
+
+.error {
+  color: #b3472e;
+  font-size: 0.76rem;
+}
+
+.error--general {
+  text-align: center;
+  background: #fbe9e4;
+  border: 1px solid #f2c9bc;
+  border-radius: var(--radius);
+  padding: 8px 10px;
+}
+
+.exito {
+  text-align: center;
+  background: #eaf3e9;
+  border: 1px solid #bcd8b4;
+  color: #31573a;
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-size: 0.84rem;
+}
+
+.btn-primario {
+  align-self: flex-start;
+  padding: 11px 22px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  color: #fcf8f4;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  box-shadow: 0 4px 14px rgba(139, 115, 85, 0.35);
+}
+
+.btn-primario:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(139, 115, 85, 0.45);
+}
+
+.btn-primario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
