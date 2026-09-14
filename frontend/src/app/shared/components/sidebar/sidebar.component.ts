@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { Component, inject } from "@angular/core";
 import { RouterLink, RouterLinkActive } from "@angular/router";
-import { AuthService } from "../../../core/services/auth.service";
+import { AuthService, MENSAJE_LOGOUT } from "../../../core/services/auth.service";
 
 interface ItemMenu {
   etiqueta: string;
@@ -20,6 +20,7 @@ export class SidebarComponent {
   private authService = inject(AuthService);
 
   usuario = this.authService.obtenerUsuario();
+  inicialUsuario = (this.usuario?.nombre?.charAt(0) ?? "?").toUpperCase();
 
   // Rutas reales: "inicio" ya existía (es el Dashboard). Las demás son
   // páginas "próximamente" mientras no exista el módulo expenses en el
@@ -34,6 +35,8 @@ export class SidebarComponent {
   ];
 
   cerrarSesion(): void {
-    this.authService.logout();
+    // Se borran token/sesión (dentro de logout) y se navega a /login con
+    // el mensaje de confirmación, que Login muestra como aviso de éxito.
+    this.authService.logout(MENSAJE_LOGOUT);
   }
 }

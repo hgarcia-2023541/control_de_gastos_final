@@ -174,3 +174,53 @@
     flex-shrink: 0;
   }
 }
+
+/* ---------- Chip de usuario (navegación) ---------- */
+.sidebar-usuario {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: rgba(255, 252, 248, 0.04);
+  border: 1px solid rgba(196, 168, 130, 0.22);
+  text-decoration: none;
+  margin-bottom: 10px;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.sidebar-usuario:hover {
+  background: rgba(255, 252, 248, 0.08);
+  border-color: rgba(196, 168, 130, 0.4);
+}
+
+.sidebar-usuario__foto {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  color: #fcf8f4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.82rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.sidebar-usuario__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sidebar-usuario__nombre {
+  font-size: 0.82rem;
+  color: var(--cream);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,12 +1,19 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { catchAsync } from "../../../middlewares/errorHandler";
-import { 
-  autenticarUsuario, 
-  registrarUsuarioAdmin 
+import { catchAsync, AppError } from "../../../middlewares/errorHandler";
+import {
+  autenticarConGoogle,
+  autenticarUsuario,
+  registrarUsuarioAdmin,
+  registrarUsuarioPublico,
 } from "../services/auth.service";
 import { RequestConUsuario } from "../../../middlewares/auth.middleware";
-import { listarUsuarios, actualizarRolUsuario, desactivarUsuario } from "../models/usuario.model";
+import {
+  actualizarPerfil,
+  actualizarRolUsuario,
+  desactivarUsuario,
+  listarUsuarios,
+} from "../models/usuario.model";
 
 const loginSchema = z.object({
   correo: z.string().email("Correo inválido"),
@@ -14,10 +21,39 @@ const loginSchema = z.object({
 });
 
 const registroSchema = z.object({
-  nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  nombre: z.string().trim().min(2, "El nombre debe tener al menos 2 caracteres").max(150),
   correo: z.string().email("Correo inválido"),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres").max(100),
   rol: z.enum(["admin", "user"]).default("user"),
+});
+
+// Registro público: NO incluye campo "rol", el usuario no puede elegirlo.
+const registroPublicoSchema = z.object({
+  nombre: z
+    .string()
+    .trim()
+    .min(2, "El nombre debe tener al menos 2 caracteres")
+    .max(150, "El nombre es muy largo"),
+  correo: z.string().email("Correo inválido"),
+  password: z
+    .string()
+    .min(6, "La contraseña debe tener al menos 6 caracteres")
+    .max(100, "La contraseña es muy larga"),
+});
+
+const googleSchema = z.object({
+  credential: z.string().min(1, "El token de Google es obligatorio"),
+});
+
+const perfilSchema = z.object({
+  nombre: z
+    .string()
+    .trim()
+    .min(2, "El nombre debe tener al menos 2 caracteres")
+    .max(150, "El nombre es muy largo")
+    .optional(),
+  foto_url: z.string().trim().max(500, "La URL de la foto es muy larga").optional(),
+  preferencias: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const login = catchAsync(async (req: Request, res: Response) => {
@@ -34,7 +70,6 @@ export const login = catchAsync(async (req: Request, res: Response) => {
 
 // Solo admin puede registrar nuevos usuarios
 export const registrar = catchAsync(async (req: RequestConUsuario, res: Response) => {
-  // Verificar que sea admin
   if (!req.usuario || req.usuario.rol !== "admin") {
     return res.status(403).json({
       ok: false,
@@ -62,6 +97,90 @@ export const registrar = catchAsync(async (req: RequestConUsuario, res: Response
     },
   });
 });
+
+// Registro público (POST /api/auth/registro-publico): cualquier persona
+// crea su cuenta con rol "user" automático.
+export const registrarPublico = catchAsync(async (req: Request, res: Response) => {
+  const datos = registroPublicoSchema.parse(req.body);
+
+  const nuevoUsuario = await registrarUsuarioPublico(
+    datos.nombre,
+    datos.correo,
+    datos.password
+  );
+
+  res.status(201).json({
+    ok: true,
+    mensaje: "Cuenta creada exitosamente. Ya puedes iniciar sesión.",
+    data: {
+      id: nuevoUsuario.id,
+      nombre: nuevoUsuario.nombre,
+      correo: nuevoUsuario.correo,
+      rol: nuevoUsuario.rol,
+    },
+  });
+});
+
+// Login con Google (POST /api/auth/google): recibe el credential/id_token
+// que el frontend obtuvo de Google, el backend lo verifica y crea/inicia
+// la sesión. NO sustituye al login tradicional.
+export const google = catchAsync(async (req: Request, res: Response) => {
+  const datos = googleSchema.parse(req.body);
+
+  const resultado = await autenticarConGoogle(datos.credential);
+
+  res.json({
+    ok: true,
+    mensaje: "Inicio de sesión con Google exitoso",
+    data: resultado,
+  });
+});
+
+// Perfil propio (PATCH /api/auth/perfil): cada usuario SOLO puede
+// modificar sus propios datos (siempre usa req.usuario.id, nunca un id
+// enviado en el body/query).
+export const actualizarMiPerfil = catchAsync(
+  async (req: RequestConUsuario, res: Response) => {
+    if (!req.usuario) {
+      throw new AppError("No se pudo identificar al usuario autenticado", 401);
+    }
+
+    const datos = perfilSchema.parse(req.body);
+
+    const cambios: {
+      nombre?: string;
+      foto_url?: string | null;
+      preferencias?: Record<string, unknown>;
+    } = {};
+
+    if (datos.nombre !== undefined) cambios.nombre = datos.nombre;
+    if (datos.foto_url !== undefined) cambios.foto_url = datos.foto_url || null;
+    if (datos.preferencias !== undefined) cambios.preferencias = datos.preferencias;
+
+    if (!Object.keys(cambios).length) {
+      throw new AppError("No hay datos para actualizar", 400);
+    }
+
+    const actualizado = await actualizarPerfil(req.usuario.id, cambios);
+    if (!actualizado) {
+      throw new AppError("Usuario no encontrado", 404);
+    }
+
+    res.json({
+      ok: true,
+      mensaje: "Perfil actualizado exitosamente",
+      data: {
+        id: actualizado.id,
+        nombre: actualizado.nombre,
+        correo: actualizado.correo,
+        rol: actualizado.rol,
+        proveedor: actualizado.proveedor,
+        fotoUrl: actualizado.foto_url,
+        preferencias: actualizado.preferencias,
+      },
+    });
+  }
+);
 
 // Listar usuarios (solo admin)
 export const listar = catchAsync(async (req: RequestConUsuario, res: Response) => {
@@ -119,7 +238,6 @@ export const desactivar = catchAsync(async (req: RequestConUsuario, res: Respons
 
   const { id } = req.params;
 
-  // No permitir desactivarse a sí mismo
   if (parseInt(id) === req.usuario.id) {
     return res.status(400).json({
       ok: false,

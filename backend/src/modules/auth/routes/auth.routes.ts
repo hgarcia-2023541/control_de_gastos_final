@@ -2,6 +2,9 @@ import { Router } from "express";
 import {
   login,
   registrar,
+  registrarPublico,
+  google,
+  actualizarMiPerfil,
   listar,
   actualizarRol,
   desactivar,
@@ -10,8 +13,11 @@ import { verificarToken } from "../../../middlewares/auth.middleware";
 
 const router = Router();
 
-// Pública: cualquiera puede intentar iniciar sesión.
+// Públicas: cualquiera puede registrarse o intentar iniciar sesión
+// (tradicional o con Google).
 router.post("/login", login);
+router.post("/registro-publico", registrarPublico);
+router.post("/google", google);
 
 // Protegidas: requieren un token válido. Cada controlador verifica
 // además que el usuario autenticado tenga rol "admin" antes de
@@ -20,5 +26,8 @@ router.post("/registrar", verificarToken, registrar);
 router.get("/usuarios", verificarToken, listar);
 router.patch("/usuarios/:id/rol", verificarToken, actualizarRol);
 router.patch("/usuarios/:id/desactivar", verificarToken, desactivar);
+
+// Perfil propio: cualquier usuario autenticado, solo sus propios datos.
+router.patch("/perfil", verificarToken, actualizarMiPerfil);
 
 export default router;
