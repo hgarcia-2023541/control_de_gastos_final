@@ -3,15 +3,14 @@ import { z } from "zod";
 import { catchAsync, AppError } from "../../../middlewares/errorHandler";
 import { RequestConUsuario } from "../../../middlewares/auth.middleware";
 import {
-  borrarIngreso,
-  editarIngreso,
-  obtenerIngresosDelUsuario,
-  registrarIngreso,
-} from "../services/ingreso.service";
+  borrarGasto,
+  editarGasto,
+  obtenerGastosDelUsuario,
+  registrarGasto,
+} from "../services/gasto.service";
 
-const ingresoSchema = z.object({
+const gastoSchema = z.object({
   descripcion: z.string().min(1, "La descripción es obligatoria").max(200),
-  fuente: z.string().min(1, "La fuente es obligatoria").max(100),
   categoria: z.string().min(1, "La categoría es obligatoria").max(100),
   tipo: z.enum(["fijo", "variable"]).default("variable"),
   monto: z.coerce.number().positive("La cantidad debe ser mayor que cero"),
@@ -25,8 +24,6 @@ const filtrosSchema = z.object({
   categoria: z.string().min(1).optional(),
 });
 
-// Helper: toma req.usuario.id (puesto por verificarToken) en vez de
-// confiar en cualquier id que venga en el body/query del frontend.
 function idDelUsuarioAutenticado(req: RequestConUsuario): number {
   if (!req.usuario) {
     throw new AppError("No se pudo identificar al usuario autenticado", 401);
@@ -38,41 +35,41 @@ export const listar = catchAsync(async (req: RequestConUsuario, res: Response) =
   const usuarioId = idDelUsuarioAutenticado(req);
   const filtros = filtrosSchema.parse(req.query);
 
-  const ingresos = await obtenerIngresosDelUsuario(usuarioId, filtros);
+  const gastos = await obtenerGastosDelUsuario(usuarioId, filtros);
 
-  res.json({ ok: true, data: ingresos });
+  res.json({ ok: true, data: gastos });
 });
 
 export const crear = catchAsync(async (req: RequestConUsuario, res: Response) => {
   const usuarioId = idDelUsuarioAutenticado(req);
-  const datos = ingresoSchema.parse(req.body);
+  const datos = gastoSchema.parse(req.body);
 
-  const nuevoIngreso = await registrarIngreso(usuarioId, {
+  const nuevoGasto = await registrarGasto(usuarioId, {
     ...datos,
     fecha: datos.fecha.toISOString().slice(0, 10),
   });
 
   res.status(201).json({
     ok: true,
-    mensaje: "Ingreso registrado exitosamente",
-    data: nuevoIngreso,
+    mensaje: "Gasto registrado exitosamente",
+    data: nuevoGasto,
   });
 });
 
 export const actualizar = catchAsync(async (req: RequestConUsuario, res: Response) => {
   const usuarioId = idDelUsuarioAutenticado(req);
   const id = Number(req.params["id"]);
-  const datos = ingresoSchema.parse(req.body);
+  const datos = gastoSchema.parse(req.body);
 
-  const ingresoActualizado = await editarIngreso(id, usuarioId, {
+  const gastoActualizado = await editarGasto(id, usuarioId, {
     ...datos,
     fecha: datos.fecha.toISOString().slice(0, 10),
   });
 
   res.json({
     ok: true,
-    mensaje: "Ingreso actualizado exitosamente",
-    data: ingresoActualizado,
+    mensaje: "Gasto actualizado exitosamente",
+    data: gastoActualizado,
   });
 });
 
@@ -80,7 +77,7 @@ export const eliminar = catchAsync(async (req: RequestConUsuario, res: Response)
   const usuarioId = idDelUsuarioAutenticado(req);
   const id = Number(req.params["id"]);
 
-  await borrarIngreso(id, usuarioId);
+  await borrarGasto(id, usuarioId);
 
-  res.json({ ok: true, mensaje: "Ingreso eliminado exitosamente" });
+  res.json({ ok: true, mensaje: "Gasto eliminado exitosamente" });
 });

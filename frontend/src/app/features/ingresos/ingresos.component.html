@@ -26,7 +26,15 @@
             <li *ngFor="let periodo of periodos" (click)="seleccionarPeriodo(periodo)">{{ periodo }}</li>
           </ul>
         </div>
-        <div class="perfil-usuario" [title]="usuario?.correo || ''">{{ inicialUsuario }}</div>
+        <div class="perfil-usuario" [title]="usuario?.correo || ''">
+          <img
+            *ngIf="usuario?.fotoUrl"
+            [src]="usuario?.fotoUrl"
+            alt="Foto de perfil"
+            class="perfil-usuario__foto"
+          />
+          <span *ngIf="!usuario?.fotoUrl">{{ inicialUsuario }}</span>
+        </div>
       </div>
     </header>
 
@@ -41,9 +49,9 @@
             <img src="/moneda.svg" alt="Moneda">
           </span>
         </div>
-        <p class="tarjeta__titulo">Total de ingresos</p>
-        <p class="tarjeta__monto">Q {{ formatoQuetzales(totalFiltrado()) }}</p>
-        <p class="tarjeta__descripcion">Total recibido en el período</p>
+        <p class="tarjeta__titulo">Ingresos del año</p>
+        <p class="tarjeta__monto">Q {{ formatoQuetzales(ingresosDelAnio()) }}</p>
+        <p class="tarjeta__descripcion">Total recibido en {{ anioSeleccionado() }}</p>
       </article>
 
       <article class="tarjeta">
@@ -135,6 +143,7 @@
               <th>Descripción</th>
               <th>Fuente</th>
               <th>Categoría</th>
+              <th>Tipo</th>
               <th>Fecha</th>
               <th>Cantidad</th>
               <th>Acciones</th>
@@ -145,6 +154,11 @@
               <td>{{ ingreso.descripcion }}</td>
               <td>{{ ingreso.fuente }}</td>
               <td>{{ ingreso.categoria }}</td>
+              <td>
+                <span class="tipo-pill" [class.tipo-pill--fijo]="ingreso.tipo === 'fijo'">
+                  {{ ingreso.tipo === "fijo" ? "Fijo" : "Variable" }}
+                </span>
+              </td>
               <td>{{ formatoFecha(ingreso.fecha) }}</td>
               <td>Q {{ formatoQuetzales(ingreso.monto) }}</td>
               <td class="col-acciones">
@@ -158,7 +172,7 @@
             </tr>
 
             <tr *ngIf="!cargando() && !errorCarga() && ingresosFiltrados().length === 0">
-              <td colspan="6" class="sin-datos">
+              <td colspan="7" class="sin-datos">
                 Todavía no tiene ingresos registrados. Use "+ Registrar ingreso" para agregar el primero.
               </td>
             </tr>
@@ -220,6 +234,17 @@
         </small>
       </div>
 
+      <div class="campo">
+        <label for="tipo">Tipo</label>
+        <select id="tipo" formControlName="tipo">
+          <option value="variable">Variable</option>
+          <option value="fijo">Fijo</option>
+        </select>
+        <small class="ayuda">
+          "Fijo/variable" es solo una clasificación; no genera recurrencia automática.
+        </small>
+      </div>
+
       <div class="campo-fila">
         <div class="campo">
           <label for="monto">Cantidad (Q)</label>
@@ -231,7 +256,7 @@
 
         <div class="campo">
           <label for="fecha">Fecha</label>
-          <input id="fecha" type="date" formControlName="fecha" />
+          <input id="fecha" type="date" [max]="fechaMaxima" formControlName="fecha" />
           <small class="error" *ngIf="formulario.get('fecha')?.invalid && formulario.get('fecha')?.touched">
             Selecciona una fecha válida.
           </small>

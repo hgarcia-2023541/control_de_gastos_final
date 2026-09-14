@@ -1,6 +1,5 @@
 import { Injectable, inject } from "@angular/core";
-import { Observable, of, map } from "rxjs";
-import { delay } from "rxjs/operators";
+import { Observable, forkJoin, map } from "rxjs";
 import {
   CategoriaGasto,
   GastoReciente,
@@ -8,91 +7,125 @@ import {
   ResumenFinanciero,
 } from "../../shared/models/dashboard.model";
 import { IngresosService } from "./ingresos.service";
+import { GastosService } from "./gastos.service";
 import { Ingreso } from "../../shared/models/ingreso.model";
+import { Gasto } from "../../shared/models/gasto.model";
 import { fechaEnPeriodo } from "../../shared/utils/periodo.util";
 
-// Los GASTOS siguen siendo datos de demostración (el backend todavía
-// no tiene el módulo "expenses" implementado, ver
-// backend/src/modules/expenses/, aún vacío). Los INGRESOS ya son
-// reales: vienen de PostgreSQL a través de IngresosService, filtrados
-// por el usuario autenticado.
-//
-// Cuando el módulo de expenses exista, solo hay que repetir aquí el
-// mismo patrón que ya se usa para ingresos (inyectar un GastosService
-// real y dejar de usar estas constantes).
-const GASTOS_DEMO_TOTAL = 2350;
-
-// misma "curva" que antes, pero ahora es la parte de GASTOS únicamente;
-// la parte de INGRESOS de cada punto se calcula con datos reales.
-const GASTOS_DEMO_POR_DIA: Record<string, number> = {
-  "1": 1, "3": 6, "5": 9, "7": 15, "9": 17, "11": 16,
-  "13": 20, "15": 18, "17": 21, "19": 19, "21": 22, "23": 24,
+// Colores por categoría de gasto (mismo criterio que gastos.component.ts):
+// las categorías sugeridas tienen un color fijo para que el donut se
+// vea consistente entre pantallas; cualquier categoría distinta que el
+// usuario haya escrito usa la paleta de respaldo por posición.
+const COLOR_POR_CATEGORIA: Record<string, string> = {
+  Alimentación: "#1f3327",
+  Transporte: "#8b7355",
+  Entretenimiento: "#c4a882",
+  Hogar: "#6f8f74",
+  Educación: "#a05a3a",
+  Salud: "#7a5c3e",
+  Otros: "#d9c9b8",
 };
+const PALETA_RESPALDO = ["#1f3327", "#3f5c46", "#6f8f74", "#8b7355", "#c4a882", "#d9c9b8"];
 
-const CATEGORIAS_GASTO_DEMO: CategoriaGasto[] = [
-  { nombre: "Alimentación", porcentaje: 35, color: "#1f3327" },
-  { nombre: "Transporte", porcentaje: 25, color: "#8b7355" },
-  { nombre: "Entretenimiento", porcentaje: 15, color: "#c4a882" },
-  { nombre: "Hogar", porcentaje: 15, color: "#6f8f74" },
-  { nombre: "Educación", porcentaje: 8, color: "#a05a3a" },
-  { nombre: "Otros", porcentaje: 2, color: "#d9c9b8" },
-];
-
-const GASTOS_RECIENTES_DEMO: GastoReciente[] = [
-  { id: 1, descripcion: "Almuerzo", categoria: "Alimentación", icono: "🍽️", fecha: "2026-08-18", monto: 35 },
-  { id: 2, descripcion: "Transporte", categoria: "Transporte", icono: "🚗", fecha: "2026-08-17", monto: 15 },
-  { id: 3, descripcion: "Compra de cuaderno", categoria: "Educación", icono: "🎓", fecha: "2026-08-15", monto: 25 },
-  { id: 4, descripcion: "Videojuego", categoria: "Entretenimiento", icono: "🎮", fecha: "2026-08-14", monto: 50 },
-  { id: 5, descripcion: "Supermercado", categoria: "Hogar", icono: "🏠", fecha: "2026-08-12", monto: 180 },
-];
+// Días usados como puntos del gráfico de línea "Resumen de ingresos y
+// gastos". No son datos: son solo las posiciones del eje X (matching
+// el diseño aprobado del Dashboard, que no debía cambiar visualmente).
+const DIAS_SERIE = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23];
 
 @Injectable({ providedIn: "root" })
 export class DashboardService {
   private ingresosService = inject(IngresosService);
-  private readonly LATENCIA_DEMO = 150;
+  private gastosService = inject(GastosService);
 
-  // Ingresos = reales (PostgreSQL, filtrados al período). Gastos = demo.
+  // Ingresos y gastos: ambos reales (PostgreSQL), filtrados por el
+  // usuario autenticado (vía interceptor + JWT) y por el período
+  // seleccionado en el Dashboard.
   obtenerResumen(periodo: string): Observable<ResumenFinanciero> {
-    return this.ingresosService.obtenerIngresos().pipe(
-      map((ingresos) => ({
-        ingresos: this.sumarIngresosDelPeriodo(ingresos, periodo),
-        gastos: GASTOS_DEMO_TOTAL,
+    return forkJoin({
+      ingresos: this.ingresosService.obtenerIngresos(),
+      gastos: this.gastosService.obtenerGastos(),
+    }).pipe(
+      map(({ ingresos, gastos }) => ({
+        ingresos: this.sumarDelPeriodo(ingresos, periodo),
+        gastos: this.sumarDelPeriodo(gastos, periodo),
       }))
     );
   }
 
-  obtenerSerieMensual(_periodo: string): Observable<PuntoSerieMensual[]> {
-    return this.ingresosService.obtenerIngresos().pipe(
-      map((ingresos) => {
-        const dias = Object.keys(GASTOS_DEMO_POR_DIA).map((d) => parseInt(d, 10));
-        return dias.map((dia) => ({
+  obtenerSerieMensual(periodo: string): Observable<PuntoSerieMensual[]> {
+    return forkJoin({
+      ingresos: this.ingresosService.obtenerIngresos(),
+      gastos: this.gastosService.obtenerGastos(),
+    }).pipe(
+      map(({ ingresos, gastos }) => {
+        const ingresosDelPeriodo = ingresos.filter((i) => fechaEnPeriodo(i.fecha, periodo));
+        const gastosDelPeriodo = gastos.filter((g) => fechaEnPeriodo(g.fecha, periodo));
+
+        // Suma acumulada de cada lista hasta cada día del período
+        // seleccionado (misma lógica que ya existía para ingresos,
+        // ahora aplicada también a gastos reales).
+        return DIAS_SERIE.map((dia) => ({
           etiqueta: String(dia),
-          // suma acumulada de ingresos reales hasta ese día del mes
-          ingresos: ingresos
+          ingresos: ingresosDelPeriodo
             .filter((i) => new Date(i.fecha + "T00:00:00").getDate() <= dia)
             .reduce((suma, i) => suma + i.monto, 0),
-          gastos: GASTOS_DEMO_POR_DIA[String(dia)],
+          gastos: gastosDelPeriodo
+            .filter((g) => new Date(g.fecha + "T00:00:00").getDate() <= dia)
+            .reduce((suma, g) => suma + g.monto, 0),
         }));
       })
     );
   }
 
-  // Se mantiene 100% de demostración: todavía no se implementa la
-  // parte real de gastos (ver punto 17/28 del encargo de Ingresos).
-  obtenerGastosPorCategoria(_periodo: string): Observable<CategoriaGasto[]> {
-    return of(CATEGORIAS_GASTO_DEMO).pipe(delay(this.LATENCIA_DEMO));
-  }
+  obtenerGastosPorCategoria(periodo: string): Observable<CategoriaGasto[]> {
+    return this.gastosService.obtenerGastos().pipe(
+      map((gastos) => {
+        const gastosDelPeriodo = gastos.filter((g) => fechaEnPeriodo(g.fecha, periodo));
+        const total = gastosDelPeriodo.reduce((suma, g) => suma + g.monto, 0);
+        if (!total) return [];
 
-  obtenerUltimosGastos(_periodo: string): Observable<GastoReciente[]> {
-    const ordenados = [...GASTOS_RECIENTES_DEMO].sort(
-      (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+        const porCategoria = new Map<string, number>();
+        for (const gasto of gastosDelPeriodo) {
+          porCategoria.set(gasto.categoria, (porCategoria.get(gasto.categoria) ?? 0) + gasto.monto);
+        }
+
+        return Array.from(porCategoria.entries())
+          .sort((a, b) => b[1] - a[1])
+          .map(([nombre, monto], i) => ({
+            nombre,
+            porcentaje: Math.round((monto / total) * 100),
+            color: COLOR_POR_CATEGORIA[nombre] ?? PALETA_RESPALDO[i % PALETA_RESPALDO.length],
+          }));
+      })
     );
-    return of(ordenados).pipe(delay(this.LATENCIA_DEMO));
   }
 
-  private sumarIngresosDelPeriodo(ingresos: Ingreso[], periodo: string): number {
-    return ingresos
-      .filter((i) => fechaEnPeriodo(i.fecha, periodo))
-      .reduce((suma, i) => suma + i.monto, 0);
+  obtenerUltimosGastos(periodo: string): Observable<GastoReciente[]> {
+    return this.gastosService.obtenerGastos().pipe(
+      map((gastos) =>
+        gastos
+          .filter((g) => fechaEnPeriodo(g.fecha, periodo))
+          .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+          .slice(0, 5)
+          .map((g) => this.aGastoReciente(g))
+      )
+    );
+  }
+
+  private aGastoReciente(gasto: Gasto): GastoReciente {
+    return {
+      id: gasto.id,
+      descripcion: gasto.descripcion,
+      categoria: gasto.categoria,
+      icono: "", // el ícono se elige en la plantilla según "categoria", no se usa este campo
+      fecha: gasto.fecha,
+      monto: gasto.monto,
+    };
+  }
+
+  private sumarDelPeriodo(lista: Array<Ingreso | Gasto>, periodo: string): number {
+    return lista
+      .filter((item) => fechaEnPeriodo(item.fecha, periodo))
+      .reduce((suma, item) => suma + item.monto, 0);
   }
 }

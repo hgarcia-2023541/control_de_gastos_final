@@ -3,29 +3,90 @@
   <div class="registro-bg-shape"></div>
   <div class="registro-tarjeta">
     <div class="registro-marca">
-  <img
-    src="/logo.svg"
-    alt="Logo Control de Gastos"
-    class="logo"
-  />
+      <img
+        src="/logo.svg"
+        alt="Logo Control de Gastos"
+        class="logo"
+      />
       <div>
         <h1>Crear cuenta</h1>
         <p>Comience a gestionar sus finanzas</p>
       </div>
     </div>
 
-    <div class="registro-info">
-      <h3>En este momento no esta disponible la opción de registro</h3>
-      <div class="registro-info__detalles">
-        <span>✦ Los usuarios se crean con rol <strong>user</strong> por defecto</span>
-        <span>✦ Los administradores pueden actualizar roles</span>
-        <span>✦ Cada usuario tiene credenciales encriptadas</span>
+    <form [formGroup]="formulario" (ngSubmit)="enviar()" class="registro-form">
+      <div class="campo">
+        <label for="nombre">Nombre</label>
+        <input
+          id="nombre"
+          type="text"
+          formControlName="nombre"
+          placeholder="Ej. María López"
+          autocomplete="name"
+        />
+        <small class="error" *ngIf="nombre.invalid && nombre.touched">
+          Ingrese su nombre (mínimo 2 caracteres).
+        </small>
       </div>
-    </div>
 
-    <div class="registro-acciones">
-      <a routerLink="/login" class="btn-registro">Ir a inicio de sesión</a>
-      <a routerLink="/" class="btn-registro btn-registro--secundario">Volver al inicio</a>
-    </div>
+      <div class="campo">
+        <label for="correo">Correo</label>
+        <input
+          id="correo"
+          type="email"
+          formControlName="correo"
+          placeholder="sucorreo@ejemplo.com"
+          autocomplete="email"
+        />
+        <small class="error" *ngIf="correo.invalid && correo.touched">
+          Ingrese un correo válido.
+        </small>
+      </div>
+
+      <div class="campo">
+        <label for="password">Contraseña</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          placeholder="Mínimo 6 caracteres"
+          autocomplete="new-password"
+        />
+        <small class="error" *ngIf="password.invalid && password.touched">
+          La contraseña debe tener al menos 6 caracteres.
+        </small>
+      </div>
+
+      <div class="campo">
+        <label for="confirmar">Confirmar contraseña</label>
+        <input
+          id="confirmar"
+          type="password"
+          formControlName="confirmar"
+          placeholder="Repita su contraseña"
+          autocomplete="new-password"
+        />
+        <small
+          class="error"
+          *ngIf="formulario.errors?.['noCoinciden'] && confirmar.touched"
+        >
+          Las contraseñas no coinciden.
+        </small>
+      </div>
+
+      <small class="error error--general" *ngIf="errorMensaje">{{ errorMensaje }}</small>
+
+      <button type="submit" [disabled]="cargando">
+        {{ cargando ? "Creando cuenta..." : "Crear cuenta" }}
+      </button>
+
+      <p class="registro-aviso">
+        Al registrarse se crea una cuenta con rol <strong>usuario</strong>.
+      </p>
+
+      <div class="registro-enlace">
+        <p>¿Ya tiene cuenta? <a routerLink="/login">Inicie sesión aquí</a></p>
+      </div>
+    </form>
   </div>
 </div>

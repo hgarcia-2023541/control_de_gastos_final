@@ -1,18 +1,116 @@
 <div class="pagina-seccion">
   <app-sidebar></app-sidebar>
 
-  <main class="pagina-seccion__contenido">
-    <header class="pagina-seccion__header">
-      <h1>Reportes</h1>
-      <p>Aquí verás reportes y análisis de tus finanzas por período.</p>
+  <main class="pagina-seccion__contenido reportes">
+    <header class="pagina-seccion__header pagina-seccion__header--fila">
+      <div>
+        <h1>Reportes</h1>
+        <p>Análisis de sus finanzas por período y por año.</p>
+      </div>
+
+      <div class="controles-periodo">
+        <button
+          type="button"
+          class="selector-periodo"
+          (click)="alternarSelectorPeriodo()"
+        >
+          {{ periodoSeleccionado() }} <span class="selector-periodo__flecha">▾</span>
+        </button>
+        <ul class="selector-periodo__lista" *ngIf="mostrarSelectorPeriodo()">
+          <li *ngFor="let periodo of periodos" (click)="seleccionarPeriodo(periodo)">
+            {{ periodo }}
+          </li>
+        </ul>
+      </div>
+
+      <div class="perfil-usuario" [title]="usuario?.correo || ''">
+        <img
+          *ngIf="usuario?.fotoUrl"
+          [src]="usuario?.fotoUrl"
+          alt="Foto de perfil"
+          class="perfil-usuario__foto"
+        />
+        <span *ngIf="!usuario?.fotoUrl">{{ inicialUsuario }}</span>
+      </div>
     </header>
 
-    <section class="pagina-seccion__vacio">
-      <span class="pagina-seccion__badge">Próximamente</span>
-      <p>
-        Esta sección ya está conectada al menú y a la navegación; solo falta
-        completar aquí el contenido cuando el backend correspondiente esté listo.
-      </p>
+    <p class="sin-datos sin-datos--error" *ngIf="errorCarga()">{{ errorCarga() }}</p>
+
+    <!-- Resumen anual -->
+    <section class="resumen-anual" *ngIf="!cargando() && !errorCarga()">
+      <article class="resumen-item">
+        <p class="resumen-item__titulo">Ingresos de {{ anioSeleccionado() }}</p>
+        <p class="resumen-item__monto">Q {{ formatoQuetzales(totalesAnuales().ingresos) }}</p>
+      </article>
+      <article class="resumen-item">
+        <p class="resumen-item__titulo">Gastos de {{ anioSeleccionado() }}</p>
+        <p class="resumen-item__monto">Q {{ formatoQuetzales(totalesAnuales().gastos) }}</p>
+      </article>
+      <article
+        class="resumen-item"
+        [class.resumen-item--negativo]="totalesAnuales().disponible < 0"
+      >
+        <p class="resumen-item__titulo">Dinero disponible</p>
+        <p class="resumen-item__monto">Q {{ formatoQuetzales(totalesAnuales().disponible) }}</p>
+      </article>
     </section>
+
+    <ng-container *ngIf="!cargando() && !errorCarga()">
+      <!-- Línea anual -->
+      <section class="panel">
+        <h2>Ingresos vs gastos por mes ({{ anioSeleccionado() }})</h2>
+        <app-line-chart [datos]="serieAnual()"></app-line-chart>
+      </section>
+
+      <!-- Donuts -->
+      <div class="paneles-donut">
+        <section class="panel">
+          <h2>Gastos por categoría</h2>
+          <ng-container *ngIf="gastosPorCategoria().length > 0; else sinGastos">
+            <app-donut-chart [datos]="gastosPorCategoria()"></app-donut-chart>
+          </ng-container>
+          <ng-template #sinGastos>
+            <p class="sin-datos">No hay gastos registrados en {{ anioSeleccionado() }}.</p>
+          </ng-template>
+        </section>
+
+        <section class="panel">
+          <h2>Ingresos por fuente</h2>
+          <ng-container *ngIf="ingresosPorFuente().length > 0; else sinIngresos">
+            <app-donut-chart [datos]="ingresosPorFuente()"></app-donut-chart>
+          </ng-container>
+          <ng-template #sinIngresos>
+            <p class="sin-datos">No hay ingresos registrados en {{ anioSeleccionado() }}.</p>
+          </ng-template>
+        </section>
+      </div>
+
+      <!-- Tabla mensual -->
+      <section class="panel">
+        <h2>Detalle por mes ({{ anioSeleccionado() }})</h2>
+        <div class="tabla-contenedor">
+          <table class="tabla-reporte">
+            <thead>
+              <tr>
+                <th>Mes</th>
+                <th>Ingresos</th>
+                <th>Gastos</th>
+                <th>Dinero disponible</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let fila of tablaMensual()">
+                <td class="tabla-reporte__mes">{{ fila.mes }}</td>
+                <td>Q {{ formatoQuetzales(fila.ingresos) }}</td>
+                <td>Q {{ formatoQuetzales(fila.gastos) }}</td>
+                <td [class.negativo]="fila.disponible < 0">
+                  Q {{ formatoQuetzales(fila.disponible) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </ng-container>
   </main>
 </div>
